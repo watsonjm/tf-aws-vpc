@@ -1,5 +1,7 @@
 variable "common_tags" {
-
+  type        = map(any)
+  default     = null
+  description = "map of tags"
 }
 variable "flow_logs" {
   type        = bool
