@@ -67,8 +67,9 @@ EOF
 }
 
 resource "aws_cloudwatch_log_group" "flow_logs" {
-  count = var.flow_logs ? 1 : 0
-  name  = "${var.tag_prefix}-vpc-flow-logs"
+  count      = var.flow_logs ? 1 : 0
+  name       = "${var.tag_prefix}-vpc-flow-logs"
+  kms_key_id = var.kms_key_id
 
   tags = merge(var.common_tags, { Name = "${var.tag_prefix}-vpc-flow-logs" })
 }
