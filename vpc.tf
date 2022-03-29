@@ -1,3 +1,7 @@
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+data "aws_partition" "current" {}
+
 resource "aws_vpc" "mainvpc" {
   cidr_block           = var.cidr_block
   enable_dns_hostnames = var.enable_dns_hostnames
@@ -59,7 +63,15 @@ resource "aws_iam_role_policy" "flow_logs" {
         "logs:DescribeLogStreams"
       ],
       "Effect": "Allow",
-      "Resource": "*"
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:SourceAccount": "${data.aws_caller_identity.current.account_id}"
+        },
+        "ArnLike": {
+          "aws:SourceArn": "${aws_cloudwatch_log_group.flow_logs.0.arn}"
+        }
+      }
     }
   ]
 }
