@@ -24,7 +24,7 @@ resource "aws_flow_log" "mainvpc" {
 
 resource "aws_iam_role" "flow_logs" {
   count = var.flow_logs ? 1 : 0
-  name  = "${var.tag_prefix}-flow-logs"
+  name  = "${var.tag_prefix}-vpc-flow-logs"
 
   assume_role_policy = <<EOF
 {
@@ -36,7 +36,15 @@ resource "aws_iam_role" "flow_logs" {
       "Principal": {
         "Service": "vpc-flow-logs.amazonaws.com"
       },
-      "Action": "sts:AssumeRole"
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": {
+          "aws:SourceAccount": "${data.aws_caller_identity.current.account_id}"
+        },
+        "ArnLike": {
+          "aws:SourceArn": "${aws_cloudwatch_log_group.flow_logs.0.arn}"
+        }
+      }
     }
   ]
 }
@@ -63,15 +71,7 @@ resource "aws_iam_role_policy" "flow_logs" {
         "logs:DescribeLogStreams"
       ],
       "Effect": "Allow",
-      "Resource": "*",
-      "Condition": {
-        "StringEquals": {
-          "aws:SourceAccount": "${data.aws_caller_identity.current.account_id}"
-        },
-        "ArnLike": {
-          "aws:SourceArn": "${aws_cloudwatch_log_group.flow_logs.0.arn}"
-        }
-      }
+      "Resource": "*"
     }
   ]
 }
