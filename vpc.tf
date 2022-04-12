@@ -13,11 +13,12 @@ resource "aws_vpc" "mainvpc" {
 }
 
 resource "aws_flow_log" "mainvpc" {
-  count           = var.flow_logs ? 1 : 0
-  iam_role_arn    = aws_iam_role.flow_logs[0].arn
-  log_destination = aws_cloudwatch_log_group.flow_logs[0].arn
-  traffic_type    = "ALL"
-  vpc_id          = aws_vpc.mainvpc.id
+  count                    = var.flow_logs ? 1 : 0
+  iam_role_arn             = aws_iam_role.flow_logs[0].arn
+  log_destination          = aws_cloudwatch_log_group.flow_logs[0].arn
+  traffic_type             = "ALL"
+  max_aggregation_interval = 60
+  vpc_id                   = aws_vpc.mainvpc.id
 
   tags = merge(var.common_tags, { Name = "${var.tag_prefix}-vpc-flow-logs" })
 }
@@ -28,25 +29,23 @@ resource "aws_iam_role" "flow_logs" {
 
   assume_role_policy = <<EOF
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "",
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "vpc-flow-logs.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole",
-      "Condition": {
-        "StringEquals": {
-          "aws:SourceAccount": "${data.aws_caller_identity.current.account_id}"
-        },
-        "ArnLike": {
-          "aws:SourceArn": "${aws_cloudwatch_log_group.flow_logs.0.arn}"
-        }
-      }
-    }
-  ]
+	"Version": "2012-10-17",
+	"Statement": [{
+		"Sid": "",
+		"Effect": "Allow",
+		"Principal": {
+			"Service": "vpc-flow-logs.amazonaws.com"
+		},
+		"Action": "sts:AssumeRole",
+		"Condition": {
+			"StringEquals": {
+				"aws:SourceAccount": "${data.aws_caller_identity.current.account_id}"
+			},
+			"ArnLike": {
+				"aws:SourceArn": "arn:${data.aws_partition.current.partition}:ec2:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:vpc-flow-log/*"
+			}
+		}
+	}]
 }
 EOF
 
@@ -79,8 +78,8 @@ EOF
 }
 
 resource "aws_cloudwatch_log_group" "flow_logs" {
-  count      = var.flow_logs ? 1 : 0
-  name       = "${var.tag_prefix}-vpc-flow-logs"
+  count       = var.flow_logs ? 1 : 0
+  name        = "${var.tag_prefix}-vpc-flow-logs"
   kms_key_arn = var.kms_key_arn
 
   tags = merge(var.common_tags, { Name = "${var.tag_prefix}-vpc-flow-logs" })
