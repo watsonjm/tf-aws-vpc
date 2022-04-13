@@ -29,7 +29,7 @@ variable "name" {
   default     = ""
   description = "AWS special 'Name' tag"
 }
-variable "tag_prefix" {
+variable "name_prefix" {
   type        = string
   default     = ""
   description = "'Name' tag prefix, used for resource naming."

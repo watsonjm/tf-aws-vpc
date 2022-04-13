@@ -20,12 +20,12 @@ resource "aws_flow_log" "mainvpc" {
   max_aggregation_interval = 60
   vpc_id                   = aws_vpc.mainvpc.id
 
-  tags = merge(var.common_tags, { Name = "${var.tag_prefix}-vpc-flow-logs" })
+  tags = merge(var.common_tags, { Name = "${var.name_prefix}-vpc-flow-logs" })
 }
 
 resource "aws_iam_role" "flow_logs" {
   count = var.flow_logs ? 1 : 0
-  name  = "${var.tag_prefix}-vpc-flow-logs"
+  name  = "${var.name_prefix}-vpc-flow-logs"
 
   assume_role_policy = <<EOF
 {
@@ -49,12 +49,12 @@ resource "aws_iam_role" "flow_logs" {
 }
 EOF
 
-  tags = merge(var.common_tags, { Name = "${var.tag_prefix}-vpc-flow-logs-role" })
+  tags = merge(var.common_tags, { Name = "${var.name_prefix}-vpc-flow-logs-role" })
 }
 
 resource "aws_iam_role_policy" "flow_logs" {
   count = var.flow_logs ? 1 : 0
-  name  = "${var.tag_prefix}-vpc-flow-logs"
+  name  = "${var.name_prefix}-vpc-flow-logs"
   role  = aws_iam_role.flow_logs[0].id
 
   policy = <<EOF
@@ -70,7 +70,7 @@ resource "aws_iam_role_policy" "flow_logs" {
         "logs:DescribeLogStreams"
       ],
       "Effect": "Allow",
-      "Resource": "*"
+      "Resource": "${aws_cloudwatch_log_group.flow_logs.0.arn}"
     }
   ]
 }
@@ -79,10 +79,10 @@ EOF
 
 resource "aws_cloudwatch_log_group" "flow_logs" {
   count       = var.flow_logs ? 1 : 0
-  name        = "${var.tag_prefix}-vpc-flow-logs"
+  name        = "${var.name_prefix}-vpc-flow-logs"
   kms_key_arn = var.kms_key_arn
 
-  tags = merge(var.common_tags, { Name = "${var.tag_prefix}-vpc-flow-logs" })
+  tags = merge(var.common_tags, { Name = "${var.name_prefix}-vpc-flow-logs" })
 }
 
 ###########################
@@ -105,13 +105,13 @@ resource "aws_default_security_group" "default" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = merge(var.common_tags, { Name = "${var.tag_prefix}-default-sg" })
+  tags = merge(var.common_tags, { Name = "${var.name_prefix}-default-sg" })
 }
 
 resource "aws_default_route_table" "default" {
   default_route_table_id = aws_vpc.mainvpc.main_route_table_id
 
-  tags = merge(var.common_tags, { Name = "${var.tag_prefix}-default-rt" })
+  tags = merge(var.common_tags, { Name = "${var.name_prefix}-default-rt" })
 }
 
 resource "aws_default_network_acl" "default" {
@@ -139,5 +139,5 @@ resource "aws_default_network_acl" "default" {
     ignore_changes = [subnet_ids]
   }
 
-  tags = merge(var.common_tags, { Name = "${var.tag_prefix}-default-nacl" })
+  tags = merge(var.common_tags, { Name = "${var.name_prefix}-default-nacl" })
 }
