@@ -85,33 +85,25 @@ resource "aws_cloudwatch_log_group" "flow_logs" {
   tags = merge(var.common_tags, { Name = "${var.name_prefix}-vpc-flow-logs" })
 }
 
-###########################
+####################################
 # DEFAULT RESOURCES
-###########################
+####################################
 resource "aws_default_security_group" "default" {
   vpc_id = aws_vpc.mainvpc.id
 
-  ingress {
-    protocol  = -1 #-1 = all 
-    self      = true
-    from_port = 0
-    to_port   = 0
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = merge(var.common_tags, { Name = "${var.name_prefix}-default-sg" })
+  tags = merge(var.common_tags, {
+    Name             = "${var.tag_prefix}-default-sg",
+    default_resource = true
+  })
 }
 
 resource "aws_default_route_table" "default" {
   default_route_table_id = aws_vpc.mainvpc.main_route_table_id
 
-  tags = merge(var.common_tags, { Name = "${var.name_prefix}-default-rt" })
+  tags = merge(var.common_tags, {
+    Name             = "${var.tag_prefix}-default-rt",
+    default_resource = true
+  })
 }
 
 resource "aws_default_network_acl" "default" {
@@ -139,5 +131,97 @@ resource "aws_default_network_acl" "default" {
     ignore_changes = [subnet_ids]
   }
 
-  tags = merge(var.common_tags, { Name = "${var.name_prefix}-default-nacl" })
+  tags = {
+    Name             = "${var.tag_prefix}-default-nacl",
+    default_resource = true
+  }
+}
+
+####################################
+# DEFAULT RESOURCES IN DEFAULT VPC
+####################################
+resource "aws_default_vpc" "default_vpc" {
+  tags = {
+    Name             = "Default VPC",
+    default_resource = true
+  }
+}
+
+resource "aws_default_subnet" "default_vpc" {
+  for_each                = toset(data.aws_availability_zones.all.names)
+  availability_zone       = each.key
+  map_public_ip_on_launch = false
+
+  tags = {
+    Name             = "Default subnet for ${each.key} in default VPC",
+    default_resource = true
+  }
+}
+
+resource "aws_default_security_group" "default_vpc" {
+  vpc_id = aws_default_vpc.default_vpc.id
+
+  tags = {
+    Name             = "Default Security Group for default VPC",
+    default_resource = true
+  }
+}
+
+resource "aws_default_route_table" "default_vpc" {
+  default_route_table_id = aws_default_vpc.default_vpc.main_route_table_id
+
+  tags = {
+    Name             = "Default Route Table for default VPC",
+    default_resource = true
+  }
+}
+
+resource "aws_default_network_acl" "default_vpc" {
+  default_network_acl_id = aws_default_vpc.default_vpc.default_network_acl_id
+
+  ingress {
+    protocol   = -1
+    rule_no    = 100
+    action     = "allow"
+    cidr_block = aws_default_vpc.default_vpc.cidr_block
+    from_port  = 0
+    to_port    = 0
+  }
+
+  egress {
+    protocol   = -1
+    rule_no    = 100
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 0
+    to_port    = 0
+  }
+
+  lifecycle {
+    ignore_changes = [subnet_ids]
+  }
+
+  tags = {
+    Name             = "Default NACL for default VPC",
+    default_resource = true
+  }
+}
+
+data "aws_internet_gateway" "default_vpc" {
+  filter {
+    name   = "attachment.vpc-id"
+    values = [aws_default_vpc.default_vpc.id]
+  }
+}
+
+resource "aws_ec2_tag" "default_vpc_default_igw" {
+  resource_id = data.aws_internet_gateway.default_vpc.internet_gateway_id
+  key         = "Name"
+  value       = "Default IGW for default VPC"
+}
+
+resource "aws_ec2_tag" "default_vpc_default_igw2" {
+  resource_id = data.aws_internet_gateway.default_vpc.internet_gateway_id
+  key         = "default_resource"
+  value       = "true"
 }
