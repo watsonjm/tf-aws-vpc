@@ -97,7 +97,7 @@ resource "aws_default_security_group" "default" {
   vpc_id = aws_vpc.mainvpc.id
 
   tags = merge(var.common_tags, {
-    Name             = "${var.tag_prefix}-default-sg",
+    Name             = "${var.name_prefix}-default-sg",
     default_resource = true
   })
 }
@@ -106,7 +106,7 @@ resource "aws_default_route_table" "default" {
   default_route_table_id = aws_vpc.mainvpc.main_route_table_id
 
   tags = merge(var.common_tags, {
-    Name             = "${var.tag_prefix}-default-rt",
+    Name             = "${var.name_prefix}-default-rt",
     default_resource = true
   })
 }
