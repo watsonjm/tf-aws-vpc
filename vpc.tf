@@ -137,7 +137,7 @@ resource "aws_default_network_acl" "default" {
   }
 
   tags = {
-    Name             = "${var.tag_prefix}-default-nacl",
+    Name             = "${var.name_prefix}-default-nacl",
     default_resource = true
   }
 }
