@@ -1,7 +1,12 @@
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 data "aws_partition" "current" {}
-
+data "aws_availability_zones" "all" {
+  filter {
+    name   = "opt-in-status"
+    values = ["opt-in-not-required"]
+  }
+}
 resource "aws_vpc" "mainvpc" {
   cidr_block           = var.cidr_block
   enable_dns_hostnames = var.enable_dns_hostnames
@@ -20,12 +25,12 @@ resource "aws_flow_log" "mainvpc" {
   max_aggregation_interval = 60
   vpc_id                   = aws_vpc.mainvpc.id
 
-  tags = merge(var.common_tags, { Name = "${var.name_prefix}-vpc-flow-logs" })
+  tags = merge(var.common_tags, { Name = "${var.tag_prefix}-vpc-flow-logs" })
 }
 
 resource "aws_iam_role" "flow_logs" {
   count = var.flow_logs ? 1 : 0
-  name  = "${var.name_prefix}-vpc-flow-logs"
+  name  = "${var.tag_prefix}-vpc-flow-logs"
 
   assume_role_policy = <<EOF
 {
@@ -49,12 +54,12 @@ resource "aws_iam_role" "flow_logs" {
 }
 EOF
 
-  tags = merge(var.common_tags, { Name = "${var.name_prefix}-vpc-flow-logs-role" })
+  tags = merge(var.common_tags, { Name = "${var.tag_prefix}-vpc-flow-logs-role" })
 }
 
 resource "aws_iam_role_policy" "flow_logs" {
   count = var.flow_logs ? 1 : 0
-  name  = "${var.name_prefix}-vpc-flow-logs"
+  name  = "${var.tag_prefix}-vpc-flow-logs"
   role  = aws_iam_role.flow_logs[0].id
 
   policy = <<EOF
@@ -78,11 +83,11 @@ EOF
 }
 
 resource "aws_cloudwatch_log_group" "flow_logs" {
-  count       = var.flow_logs ? 1 : 0
-  name        = "${var.name_prefix}-vpc-flow-logs"
-  kms_key_arn = var.kms_key_arn
+  count      = var.flow_logs ? 1 : 0
+  name       = "${var.tag_prefix}-vpc-flow-logs"
+  kms_key_id = var.kms_key_arn
 
-  tags = merge(var.common_tags, { Name = "${var.name_prefix}-vpc-flow-logs" })
+  tags = merge(var.common_tags, { Name = "${var.tag_prefix}-vpc-flow-logs" })
 }
 
 ####################################
@@ -140,6 +145,10 @@ resource "aws_default_network_acl" "default" {
 ####################################
 # DEFAULT RESOURCES IN DEFAULT VPC
 ####################################
+# Terraform is looking for default resources security reasons
+# Terraform will set a Name tag along with various network settings
+# to increase security (e.g. default subnets - no auto public ip)
+#tfsec:ignore:aws-vpc-no-default-vpc
 resource "aws_default_vpc" "default_vpc" {
   tags = {
     Name             = "Default VPC",
