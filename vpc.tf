@@ -11,7 +11,6 @@ resource "aws_vpc" "mainvpc" {
   cidr_block           = var.cidr_block
   enable_dns_hostnames = var.enable_dns_hostnames
   enable_dns_support   = var.enable_dns_support
-  enable_classiclink   = var.enable_classiclink
   instance_tenancy     = "default"
 
   tags = merge(var.common_tags, { Name = var.name })
