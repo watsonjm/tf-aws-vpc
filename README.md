@@ -31,7 +31,6 @@ module "vpc" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
   enable_dns_support   = true
-  enable_classiclink   = false
   flow_logs            = true
   kms_key_arn          = aws_kms_key.keys["vpc_flow_logs"].arn
 }
